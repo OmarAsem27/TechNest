@@ -14,11 +14,11 @@ class ProductController extends Controller
     public function index()
     {
         $products = json_decode(Redis::get('products'));
+
         if ($products == '') {
             $products = product::get();
             Redis::set('products', $products);
         }
-
         return view('product.index', compact('products'));
     }
 
@@ -35,7 +35,22 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $attributes = $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|gt:0',
+            'description' => 'required|string|max:255'
+        ]);
+
+        $newProduct = Product::create($attributes);
+
+        if ($newProduct) {
+            Redis::del('products');
+
+            $products = product::get();
+            Redis::set('products', $products);
+        }
+
+        return to_route('products.index')->with('success', 'Product Created Successfully');
     }
 
     /**
